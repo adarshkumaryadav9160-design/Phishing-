@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PhishScan</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--fg:#14181f;--mut:#5d6675;--bd:#e1e5ea;--low:#1a7f45;--med:#b7791f;--high:#d9480f;--crit:#b42318}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b22;--fg:#e8ebf0;--mut:#9aa3b2;--bd:#2a313c;--low:#4cc38a;--med:#e5b04a;--high:#ff8a5c;--crit:#ff6b5e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:32px 16px}h1{font-size:1.5rem;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 24px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:20px;margin-bottom:16px}
+form{display:flex;gap:8px;flex-wrap:wrap}input[type=text]{flex:1;min-width:200px;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg);font-size:1rem}
+button{padding:10px 18px;border:0;border-radius:8px;background:var(--fg);color:var(--bg);font-size:1rem;cursor:pointer}
+label{display:block;color:var(--mut);font-size:.9rem;margin-top:10px;width:100%}
+.score{display:flex;align-items:baseline;gap:12px}.num{font-size:3rem;font-weight:700}.lvl{font-size:1.2rem;font-weight:600}
+.bar{height:8px;border-radius:4px;background:var(--bd);overflow:hidden;margin:8px 0 14px}.bar i{display:block;height:100%}
+ul{padding-left:20px;margin:6px 0}.mut{color:var(--mut);font-size:.9rem}.err{color:var(--crit)}
+</style></head><body><main>
+<h1>PhishScan</h1><p class="sub">ML-based phishing detection and risk analysis for URLs.</p>
+<div class="card"><form id="f"><input type="text" id="u" placeholder="https://example.com/login" required aria-label="URL to analyze">
+<button>Analyze</button><label><input type="checkbox" id="fetch" checked> Fetch and inspect page content (server-side, no scripts run)</label></form></div>
+<div id="out"></div>
+<script>
+const C={Low:'var(--low)',Medium:'var(--med)',High:'var(--high)',Critical:'var(--crit)'};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+document.getElementById('f').onsubmit=async e=>{e.preventDefault();const o=document.getElementById('out');o.innerHTML='<div class="card mut">Analyzing…</div>';
+try{const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:u.value,fetch:fetch_.checked})});
+const d=await r.json();if(!r.ok){o.innerHTML=`<div class="card err">${esc(d.error)}</div>`;return}
+const c=C[d.risk_level];
+o.innerHTML=`<div class="card"><div class="score"><span class="num" style="color:${c}">${d.risk_score}</span><span class="lvl" style="color:${c}">${d.risk_level} risk</span></div>
+<div class="bar"><i style="width:${d.risk_score}%;background:${c}"></i></div><p>${esc(d.advice)}</p>
+<p class="mut">ML phishing probability: ${(d.ml_probability*100).toFixed(1)}% · ${d.content_analyzed?'URL + page content analyzed':'URL only'+(d.fetch&&d.fetch.error?' ('+esc(d.fetch.error)+')':'')}</p></div>
+<div class="card"><strong>Why</strong>${d.reasons.length?'<ul>'+d.reasons.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="mut">No rule-based warning signs found.</p>'}</div>`}
+catch(err){o.innerHTML='<div class="card err">Request failed.</div>'}};
+const fetch_=document.getElementById('fetch'),u=document.getElementById('u');
+</script></main></body></html>

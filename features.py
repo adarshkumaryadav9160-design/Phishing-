@@ -6,6 +6,8 @@ from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
+import intel
+
 SUSPICIOUS_TLDS = {"zip", "mov", "xyz", "top", "tk", "ml", "ga", "cf", "gq", "click", "country",
                    "work", "support", "loan", "rest", "icu", "cam", "buzz", "monster"}
 SHORTENERS = {"bit.ly", "tinyurl.com", "t.co", "goo.gl", "ow.ly", "is.gd", "buff.ly", "rebrand.ly", "cutt.ly"}
@@ -41,7 +43,8 @@ URL_FEATURES = [
     "n_special", "n_subdomains", "has_ip", "is_https", "has_port", "digit_ratio", "host_entropy",
     "url_entropy", "suspicious_tld", "is_shortener", "n_phish_words", "n_brand_in_sub_or_path",
     "brand_in_host_not_reg", "double_slash_in_path", "has_punycode", "hyphen_in_domain",
-    "max_label_len", "n_params",
+    "max_label_len", "n_params", "typosquat", "brand_in_regname", "free_host", "redirect_param",
+    "n_pct_encoded", "suspicious_ext", "path_depth", "nonascii_host", "digits_in_regname",
 ]
 
 
@@ -54,6 +57,10 @@ def url_features(url: str) -> dict:
     low = url.lower()
     path_q = (p.path + "?" + p.query).lower()
     reg_name = reg.split(".")[0] if reg else ""
+    hits_sub = intel.brand_hits(sub)
+    hits_all = set(hits_sub) | set(intel.brand_hits(path_q))
+    unofficial_all = [b for b in hits_all if not intel.is_official(b, reg)]
+    squat = None if IP_RE.match(host) else intel.typosquat((host.split(".")[0] + ".com") if intel.is_free_host(host) else reg)
     f = {
         "url_len": len(url), "host_len": len(host), "path_len": len(p.path), "query_len": len(p.query),
         "n_dots": host.count("."), "n_hyphens": host.count("-"),
@@ -69,13 +76,22 @@ def url_features(url: str) -> dict:
         "suspicious_tld": int(tld in SUSPICIOUS_TLDS),
         "is_shortener": int(host in SHORTENERS),
         "n_phish_words": sum(w in low for w in PHISH_WORDS),
-        "n_brand_in_sub_or_path": sum(b in (sub + path_q) for b in BRAND_WORDS),
-        "brand_in_host_not_reg": int(any(b in host and b not in reg_name for b in BRAND_WORDS)),
+        "n_brand_in_sub_or_path": len(unofficial_all),
+        "brand_in_host_not_reg": int(any(not intel.is_official(b, reg) for b in hits_sub)),
         "double_slash_in_path": int("//" in p.path),
         "has_punycode": int("xn--" in host),
         "hyphen_in_domain": int("-" in reg_name),
         "max_label_len": max((len(x) for x in host.split(".")), default=0),
         "n_params": len([x for x in p.query.split("&") if x]),
+        "typosquat": int(bool(squat and squat[0] in ("typosquat", "homoglyph"))),
+        "brand_in_regname": int(bool(squat and squat[0] == "brand-in-domain")),
+        "free_host": int(intel.is_free_host(host)),
+        "redirect_param": int(bool(re.search(r"[?&](url|redirect|redir|next|goto|dest|target|continue|link)=https?(%3a|:)", low))),
+        "n_pct_encoded": len(re.findall(r"%[0-9a-f]{2}", low)),
+        "suspicious_ext": int(bool(re.search(r"\.(exe|apk|scr|zip|rar|msi|bat|js|jar|iso|docm|xlsm)(\?|$)", p.path.lower()))),
+        "path_depth": len([x for x in p.path.split("/") if x]),
+        "nonascii_host": int(any(ord(ch) > 127 for ch in host)),
+        "digits_in_regname": int(sum(ch.isdigit() for ch in reg_name) >= 2 and any(ch.isalpha() for ch in reg_name)),
     }
     return f
 
@@ -125,7 +141,8 @@ def content_features(html: str | None, url: str) -> dict:
     text = soup.get_text(" ", strip=True).lower()
     title = (soup.title.string or "").lower() if soup.title and soup.title.string else ""
     reg_name = split_host(host)[1].split(".")[0]
-    title_brand = [b for b in BRAND_WORDS if b in title]
+    title_brand = intel.brand_hits(title)
+    reg_full = split_host(host)[1]
     scripts = " ".join(s.get_text() for s in soup.find_all("script")).lower()
     icon = soup.find("link", rel=lambda r: r and "icon" in " ".join(r).lower() if isinstance(r, list) else r and "icon" in r.lower())
     return {
@@ -145,7 +162,7 @@ def content_features(html: str | None, url: str) -> dict:
         "has_favicon_ext": int(bool(icon and urlparse(icon.get("href", "")).hostname
                                     and not _same_site(urlparse(icon.get("href", "")).hostname, host))),
         "title_missing": int(not title),
-        "title_brand_mismatch": int(bool(title_brand) and not any(b in reg_name for b in title_brand)),
+        "title_brand_mismatch": int(bool(title_brand) and not any(intel.is_official(b, reg_full) for b in title_brand)),
         "ext_resource_ratio": ext_res / max(len(res), 1),
         "n_meta_refresh": len(soup.find_all("meta", attrs={"http-equiv": re.compile("refresh", re.I)})),
         "text_len": len(text),

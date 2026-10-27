@@ -1,33 +1,75 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PhishScan</title>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--fg:#14181f;--mut:#5d6675;--bd:#e1e5ea;--low:#1a7f45;--med:#b7791f;--high:#d9480f;--crit:#b42318}
-@media(prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b22;--fg:#e8ebf0;--mut:#9aa3b2;--bd:#2a313c;--low:#4cc38a;--med:#e5b04a;--high:#ff8a5c;--crit:#ff6b5e}}
+:root{--bg:#f6f7f9;--card:#fff;--fg:#14181f;--mut:#5d6675;--bd:#e1e5ea;--low:#1a7f45;--med:#b7791f;--high:#d9480f;--crit:#b42318;--acc:#2457d6}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b22;--fg:#e8ebf0;--mut:#9aa3b2;--bd:#2a313c;--low:#4cc38a;--med:#e5b04a;--high:#ff8a5c;--crit:#ff6b5e;--acc:#7da2ff}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif}
-main{max-width:720px;margin:0 auto;padding:32px 16px}h1{font-size:1.5rem;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 24px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:20px;margin-bottom:16px}
-form{display:flex;gap:8px;flex-wrap:wrap}input[type=text]{flex:1;min-width:200px;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg);font-size:1rem}
-button{padding:10px 18px;border:0;border-radius:8px;background:var(--fg);color:var(--bg);font-size:1rem;cursor:pointer}
-label{display:block;color:var(--mut);font-size:.9rem;margin-top:10px;width:100%}
-.score{display:flex;align-items:baseline;gap:12px}.num{font-size:3rem;font-weight:700}.lvl{font-size:1.2rem;font-weight:600}
-.bar{height:8px;border-radius:4px;background:var(--bd);overflow:hidden;margin:8px 0 14px}.bar i{display:block;height:100%}
-ul{padding-left:20px;margin:6px 0}.mut{color:var(--mut);font-size:.9rem}.err{color:var(--crit)}
+main{max-width:780px;margin:0 auto;padding:28px 16px 60px}h1{font-size:1.5rem;margin:0 0 2px}.sub{color:var(--mut);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px;margin-bottom:14px}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}.tabs button{background:transparent;color:var(--mut);border:1px solid var(--bd);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:.95rem}
+.tabs button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+input[type=text],textarea{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg);font:inherit}
+textarea{min-height:150px;resize:vertical}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+button.go{padding:10px 18px;border:0;border-radius:8px;background:var(--acc);color:#fff;font-size:1rem;cursor:pointer}button.go:disabled{opacity:.6}
+button.sm{padding:6px 12px;border:1px solid var(--bd);border-radius:8px;background:transparent;color:var(--fg);cursor:pointer;font-size:.85rem}
+label.chk{color:var(--mut);font-size:.9rem}.hide{display:none}
+.score{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.num{font-size:3rem;font-weight:700;line-height:1}.lvl{font-size:1.2rem;font-weight:600}
+.bar{height:8px;border-radius:4px;background:var(--bd);overflow:hidden;margin:10px 0 12px}.bar i{display:block;height:100%}
+h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:14px 0 6px}
+.sig{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid var(--bd)}.sig:first-of-type{border-top:0}
+.chip{font-size:.72rem;padding:1px 8px;border-radius:99px;border:1px solid currentColor;white-space:nowrap;margin-top:3px}
+.high{color:var(--crit)}.medium{color:var(--med)}.low{color:var(--mut)}.ok{color:var(--low)}
+.mut{color:var(--mut);font-size:.9rem}.err{color:var(--crit)}.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.kv div{border:1px solid var(--bd);border-radius:8px;padding:8px 10px}.kv b{display:block;font-size:.75rem;color:var(--mut);font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:.92rem}td,th{text-align:left;padding:7px 6px;border-top:1px solid var(--bd);vertical-align:top;word-break:break-all}
+.pill{font-weight:600}
 </style></head><body><main>
-<h1>PhishScan</h1><p class="sub">ML-based phishing detection and risk analysis for URLs.</p>
-<div class="card"><form id="f"><input type="text" id="u" placeholder="https://example.com/login" required aria-label="URL to analyze">
-<button>Analyze</button><label><input type="checkbox" id="fetch" checked> Fetch and inspect page content (server-side, no scripts run)</label></form></div>
+<h1>PhishScan</h1><p class="sub">Phishing detection and risk analysis: URL, domain, page content, live network checks and emails.</p>
+<div class="tabs" role="tablist"><button class="on" data-t="url">URL scan</button><button data-t="email">Email scan</button><button data-t="batch">Batch</button></div>
+
+<div class="card" id="p-url"><input type="text" id="u" placeholder="https://example.com/login" aria-label="URL to analyze">
+<div class="row"><button class="go" id="b-url">Analyze</button><label class="chk"><input type="checkbox" id="deep" checked> Deep scan: fetch page, domain age, TLS, DNS (server-side, no scripts run)</label></div></div>
+<div class="card hide" id="p-email"><textarea id="e" placeholder="Paste the email here: headers (From:, Reply-To:), body or HTML source"></textarea>
+<div class="row"><button class="go" id="b-email">Analyze email</button><label class="chk"><input type="checkbox" id="edeep"> Deep-scan the first 3 links</label></div></div>
+<div class="card hide" id="p-batch"><textarea id="bt" placeholder="One URL per line (max 25)"></textarea>
+<div class="row"><button class="go" id="b-batch">Analyze list</button></div></div>
 <div id="out"></div>
+
 <script>
-const C={Low:'var(--low)',Medium:'var(--med)',High:'var(--high)',Critical:'var(--crit)'};
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-document.getElementById('f').onsubmit=async e=>{e.preventDefault();const o=document.getElementById('out');o.innerHTML='<div class="card mut">Analyzing…</div>';
-try{const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:u.value,fetch:fetch_.checked})});
-const d=await r.json();if(!r.ok){o.innerHTML=`<div class="card err">${esc(d.error)}</div>`;return}
-const c=C[d.risk_level];
-o.innerHTML=`<div class="card"><div class="score"><span class="num" style="color:${c}">${d.risk_score}</span><span class="lvl" style="color:${c}">${d.risk_level} risk</span></div>
-<div class="bar"><i style="width:${d.risk_score}%;background:${c}"></i></div><p>${esc(d.advice)}</p>
-<p class="mut">ML phishing probability: ${(d.ml_probability*100).toFixed(1)}% · ${d.content_analyzed?'URL + page content analyzed':'URL only'+(d.fetch&&d.fetch.error?' ('+esc(d.fetch.error)+')':'')}</p></div>
-<div class="card"><strong>Why</strong>${d.reasons.length?'<ul>'+d.reasons.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="mut">No rule-based warning signs found.</p>'}</div>`}
-catch(err){o.innerHTML='<div class="card err">Request failed.</div>'}};
-const fetch_=document.getElementById('fetch'),u=document.getElementById('u');
+const $=id=>document.getElementById(id),C={Low:'var(--low)',Medium:'var(--med)',High:'var(--high)',Critical:'var(--crit)'};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let last=null;
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+ ['url','email','batch'].forEach(t=>$('p-'+t).classList.toggle('hide',t!==b.dataset.t));$('out').innerHTML=''});
+async function post(path,body,btn){const o=$('out');o.innerHTML='<div class="card mut">Analyzing…</div>';btn.disabled=true;
+ try{const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();
+  if(!r.ok){o.innerHTML=`<div class="card err">${esc(d.error||'Request failed')}</div>`;return null}return d}
+ catch(e){o.innerHTML='<div class="card err">Request failed. Check your connection.</div>';return null}finally{btn.disabled=false}}
+const head=(d,label)=>`<div class="score"><span class="num" style="color:${C[d.risk_level]}">${d.risk_score}</span><span class="lvl" style="color:${C[d.risk_level]}">${d.risk_level} risk${label||''}</span></div>
+<div class="bar"><i style="width:${d.risk_score}%;background:${C[d.risk_level]}"></i></div><p>${esc(d.advice)}</p>`;
+const sigs=a=>a.length?a.map(s=>`<div class="sig"><span class="chip ${s.severity}">${s.severity}</span><span><span class="mut">${esc(s.category)} · </span>${esc(s.message)}</span></div>`).join(''):'<p class="mut">No warning signs found.</p>';
+function net(n,d){const k=[];const a=n.age||{},t=n.tls||{},ds=n.dns||{},g=n.gsb||{};
+ if(!Object.keys(n).length)return'<p class="mut">Deep scan was off.</p>';
+ k.push(['Domain age',a.status==='ok'&&a.age_days!=null?(a.age_days<365?a.age_days+' days':(a.age_days/365).toFixed(1)+' years'):(a.status==='not_found'?'Not found in RDAP':'Unavailable')]);
+ k.push(['TLS certificate',t.status==='ok'?(t.valid?`Valid · ${esc(t.issuer||'')} · ${t.cert_age_days}d old`:'Invalid: '+esc(t.error||'')):'Unavailable']);
+ k.push(['DNS',ds.status==='ok'?(ds.resolves?'Resolves':'Does not resolve'):'Unavailable']);
+ k.push(['Safe Browsing',g.status==='ok'?(g.flagged?'FLAGGED':'Clean'):'Not configured']);
+ if(d.fetch&&d.fetch.status)k.push(['Page fetch',`HTTP ${d.fetch.status}, ${d.fetch.redirects||0} redirects`]);else if(d.fetch&&d.fetch.error)k.push(['Page fetch',esc(d.fetch.error)]);
+ return'<div class="kv">'+k.map(([a,b])=>`<div><b>${a}</b>${b}</div>`).join('')+'</div>'}
+function showUrl(d){last=d;$('out').innerHTML=`<div class="card">${head(d,d.known_domain?' · well-known domain':'')}
+<p class="mut">${esc(d.domain)} · ML probability ${(d.ml_probability*100).toFixed(1)}% · rule score ${d.rule_score} · ${d.content_analyzed?'URL + page content':'URL only'}</p>
+<div class="row"><button class="sm" id="dl">Download report (JSON)</button><button class="sm" id="cp">Copy summary</button></div></div>
+<div class="card"><h3>Evidence</h3>${sigs(d.signals)}${d.positives.length?'<h3>Positive signs</h3>'+d.positives.map(p=>`<div class="sig"><span class="chip ok">ok</span><span>${esc(p)}</span></div>`).join(''):''}</div>
+<div class="card"><h3>Live network checks</h3>${net(d.network||{},d)}</div>`;
+ $('dl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));a.download='phishscan-report.json';a.click()};
+ $('cp').onclick=()=>navigator.clipboard.writeText(`${d.url}\nRisk: ${d.risk_level} (${d.risk_score}/100)\n`+d.reasons.map(r=>'- '+r).join('\n'))}
+const run=()=>{const v=$('u').value.trim();if(v)post('/api/analyze',{url:v,deep:$('deep').checked},$('b-url')).then(d=>d&&showUrl(d))};
+$('b-url').onclick=run;$('u').onkeydown=e=>e.key==='Enter'&&run();
+const rows=(arr)=>`<table><tr><th>Risk</th><th>URL</th><th>Why</th></tr>${arr.map(r=>`<tr><td class="pill" style="color:${C[r.risk_level]}">${r.risk_score}<br>${r.risk_level}</td><td>${esc(r.url)}</td><td>${esc(r.reasons.slice(0,3).join('; ')||(r.known_domain?'Well-known domain':'No warning signs'))}</td></tr>`).join('')}</table>`;
+$('b-email').onclick=async()=>{const t=$('e').value;const d=await post('/api/email',{text:t,deep:$('edeep').checked},$('b-email'));if(!d)return;
+ $('out').innerHTML=`<div class="card">${head(d)}<p class="mut">Text-based score ${d.text_score} · ${d.n_urls} link(s) found</p></div>
+ <div class="card"><h3>Email red flags</h3>${d.text_signals.length?d.text_signals.map(s=>`<div class="sig"><span class="chip medium">flag</span><span>${esc(s)}</span></div>`).join(''):'<p class="mut">No suspicious wording or sender issues found.</p>'}</div>
+ ${d.urls.length?`<div class="card"><h3>Links</h3>${rows(d.urls)}</div>`:''}`};
+$('b-batch').onclick=async()=>{const urls=$('bt').value.split(/\n+/).map(s=>s.trim()).filter(Boolean);const d=await post('/api/batch',{urls},$('b-batch'));if(!d)return;
+ const s=d.summary;$('out').innerHTML=`<div class="card"><strong>${d.count} URLs</strong> <span class="mut">· Critical ${s.Critical} · High ${s.High} · Medium ${s.Medium} · Low ${s.Low}</span>${rows(d.results)}</div>`};
 </script></main></body></html>

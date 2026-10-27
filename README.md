@@ -1,5 +1,15 @@
 # PhishScan: ML phishing detection + risk analysis
 
+## Features
+- **URL scan**: 59 URL/domain/page features + calibrated ML model + weighted, explainable evidence (URL, Domain, Content, Network).
+- **Brand-impersonation checks**: official-domain map, typosquat/homoglyph detection (paypa1, gooogle, arnazon), brand-in-subdomain, free-hosting abuse (web.app, pages.dev, github.io...).
+- **Live deep scan** (works on Vercel, needs outbound internet): page fetch (SSRF-safe), domain age via RDAP, TLS certificate, DNS, redirect chain.
+- **Google Safe Browsing** (optional): set env var `GSB_API_KEY`.
+- **Email scan** (`POST /api/email`): urgency/threat/credential language, sender spoofing, Reply-To mismatch, link text vs real target, plus every link scored.
+- **Batch scan** (`POST /api/batch`, up to 25 URLs), JSON report download, per-IP rate limit (`RATE_LIMIT_PER_MIN`, default 30).
+- Well-known domains (allowlist in `intel.py`) are capped at a low score to avoid false alarms.
+
+
 URL + page-content features -> calibrated classifier (RandomForest / GradientBoosting / XGBoost, best by ROC-AUC)
 -> blended 0-100 risk score (75% ML probability, 25% explainable rule signals) -> tier + human-readable reasons.
 
@@ -19,6 +29,10 @@ Alternatively use UCI/Kaggle phishing datasets, but they only hold pre-computed 
 
 ## Layout
 features.py (50 URL+content features) · fetcher.py (SSRF-safe fetch) · train.py · risk.py (score + reasons) · app.py + templates/
+
+## Sanity check
+`python tests/sanity_cases.py` scores 20 realistic legitimate URLs and 20 phishing-style URLs (static analysis only).
+These cases were written by hand alongside the rules, so treat them as a regression test, not a benchmark.
 
 ## Known limits / next steps
 - Real phishing is ~1% of traffic; tune the threshold for precision on realistic base rates, not balanced accuracy.

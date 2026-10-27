@@ -64,7 +64,7 @@ function showUrl(d){last=d;$('out').innerHTML=`<div class="card">${head(d,d.know
  $('dl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));a.download='phishscan-report.json';a.click()};
  $('cp').onclick=()=>navigator.clipboard.writeText(`${d.url}\nRisk: ${d.risk_level} (${d.risk_score}/100)\n`+d.reasons.map(r=>'- '+r).join('\n'))}
 const run=()=>{const v=$('u').value.trim();if(v)post('/api/analyze',{url:v,deep:$('deep').checked},$('b-url')).then(d=>d&&showUrl(d))};
-$('b-url').onclick=run;$('u').onkeydown=e=>e.key==='Enter'&&run();
+$('b-url').onclick=run;$('u').addEventListener('keydown',e=>{if(e.key==='Enter')run()});
 const rows=(arr)=>`<table><tr><th>Risk</th><th>URL</th><th>Why</th></tr>${arr.map(r=>`<tr><td class="pill" style="color:${C[r.risk_level]}">${r.risk_score}<br>${r.risk_level}</td><td>${esc(r.url)}</td><td>${esc(r.reasons.slice(0,3).join('; ')||(r.known_domain?'Well-known domain':'No warning signs'))}</td></tr>`).join('')}</table>`;
 $('b-email').onclick=async()=>{const t=$('e').value;const d=await post('/api/email',{text:t,deep:$('edeep').checked},$('b-email'));if(!d)return;
  $('out').innerHTML=`<div class="card">${head(d)}<p class="mut">Text-based score ${d.text_score} · ${d.n_urls} link(s) found</p></div>

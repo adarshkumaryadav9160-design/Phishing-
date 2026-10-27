@@ -6,9 +6,10 @@ from flask import Flask, jsonify, render_template, request
 from fetcher import fetch_html
 from risk import Analyzer
 
-app = Flask(__name__)
+BASE = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__, template_folder=os.path.join(BASE, "templates"))
 app.config["MAX_CONTENT_LENGTH"] = 64 * 1024
-analyzer = Analyzer(os.environ.get("MODEL_PATH", "models/model.joblib"))
+analyzer = Analyzer(os.environ.get("MODEL_PATH", os.path.join(BASE, "models", "model.joblib")))
 
 
 @app.get("/")

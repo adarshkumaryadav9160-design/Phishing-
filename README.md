@@ -29,5 +29,5 @@ features.py (50 URL+content features) · fetcher.py (SSRF-safe fetch) · train.p
 ## Deploy on Vercel
     npm i -g vercel
     vercel login && vercel --prod        # run from this folder; commit models/model.joblib (it is needed at runtime)
-`api/index.py` exposes the Flask app, `vercel.json` routes everything to it and sets a 30s limit.
+Vercel auto-detects the Flask `app` in `app.py` (no vercel.json needed).
 `requirements.txt` holds runtime deps only (training deps are in `requirements-train.txt`). Retrain locally, then redeploy.
